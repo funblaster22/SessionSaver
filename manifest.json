@@ -1,0 +1,17 @@
+{
+  "name": "Session Saver",
+  "version": "1.0",
+  "description": "Saves all tabs, including groups",
+  "permissions": [
+    "storage",
+    "tabs",
+    "tabGroups"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "manifest_version": 3
+}
