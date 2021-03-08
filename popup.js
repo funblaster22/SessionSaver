@@ -5,10 +5,15 @@ const port = chrome.extension.connect({
 port.onMessage.addListener(msg => {
   console.log("message received " + msg);
 });
+let ctrlPressed = false;
 
 function loadProject(name) {
-  // Tab loading logic must occur in background b/c popup gets terminated before adding to group
-  port.postMessage(["load", name]);
+  // TODO: don't open new tab in addition
+  chrome.windows.create({focused: true}, () => {
+    // Tab loading logic must occur in background b/c popup gets terminated before adding to group
+    port.postMessage(["load", name]);
+    window.close();
+  });
 }
 
 async function _addGroup(/** chrome.TabGroup | int */ tabGroup) /** void */ {
@@ -81,4 +86,5 @@ window.onload = () => {
   document.getElementById('newProj').onclick = _addGroup.bind(this, chrome.tabGroups.TAB_GROUP_ID_NONE);
   document.getElementById('allGrps').onclick = addAllGroups;
   document.getElementById('curGrp').onclick = addCurrentGroup;
+  document.onkeydown = document.onkeyup = ev => ctrlPressed = ev.ctrlKey;
 };
