@@ -1,0 +1,52 @@
+/* Global */
+body, html {
+    padding: 0;
+    margin: 0;
+    font-family: Arial, serif;
+    /*font-size: 12pt;*/
+}
+button, label {
+    cursor: pointer;
+}
+
+#flex-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+.search {
+    border-radius: 100vw;
+    border: 1px solid;
+}
+
+#workspaces {flex-grow: 1;}
+
+/* Projects styling */
+#projects {
+    flex-grow: 1;
+}
+#projects label {
+    display: block;
+}
+#projects button {
+    cursor: move;
+    -webkit-user-drag: element;
+}
+
+#controls * {
+    display: inline-block;
+    margin: 0 5px 0 5px;
+}
+
+.group {
+    appearance: none;
+    border-radius: 5px;
+    border: 0;
+    padding: 6px;
+    background-color: red;
+    vertical-align: middle;
+}
+.group:empty {
+    border-radius: 50%;
+}

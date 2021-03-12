@@ -71,11 +71,22 @@ function addAllGroups(ev) {
 /** Show saved project groups in popup gui */
 function renderAllProjects() {
   chrome.storage.sync.get(null, items => {
-    for (const [name, urls] of Object.entries(items)) {
+    for (const [name, details] of Object.entries(items)) {
+      const label = document.createElement('label')
       const button = document.createElement('button');
-      button.innerText = name;
+      button.innerText = details.shortName;
+      button.className = "group";
+      button.draggable = true;
+      const colors = {
+        grey: "#5f6368", blue: "#1a73e8", red: "#d93025", yellow: "#e37400",
+        green: "#1e8e3e", pink: "#d01884", purple: "#9334e6", cyan: "#007b83"
+      };
+      button.style.backgroundColor = colors[details.color];
+
       button.onclick = loadProject.bind(this, name);
-      document.body.appendChild(button);
+      label.appendChild(button)
+      label.append(name);
+      document.querySelector('#projects .content').appendChild(label);
     }
   });
 }
