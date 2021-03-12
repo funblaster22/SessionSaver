@@ -1,7 +1,8 @@
 {
-  "name": "Session Saver",
+  "name": "__MSG_title__",
   "version": "1.0",
-  "description": "Saves all tabs, including groups",
+  "description": "__MSG_description__",
+  "default_locale": "en",
   "permissions": [
     "storage",
     "tabs",
@@ -12,6 +13,10 @@
   },
   "action": {
     "default_popup": "popup.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
   },
   "manifest_version": 3
 }

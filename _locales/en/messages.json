@@ -1,0 +1,27 @@
+{
+  "title": {
+    "message": "Session Saver"
+  },
+  "description": {
+    "message": "Saves all tabs, including groups"
+  },
+  "reset": {
+    "message": "Reset all settings",
+    "description": "Button to restore all settings to default"
+  },
+  "general": {
+    "message": "General",
+    "description": "the header for general settings"
+  },
+  "dark": {
+    "message": "Dark theme",
+    "description": "setting to enable/disable dark theme"
+  },
+  "ignore_zoom": {
+    "message": "Ignore Zoom new meeting tabs",
+    "description": "setting to enable/disable adding Zoom tabs to project"
+  },
+  "suspender": {
+    "message": "Save real url of tabs suspended by The Great Suspender (or similar extensions)"
+  }
+}
