@@ -12,7 +12,7 @@ button, label {
 #flex-container {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: max(599px, 100vh);
 }
 
 .search {
@@ -20,11 +20,16 @@ button, label {
     border: 1px solid;
 }
 
-#workspaces {flex-grow: 1;}
+/* Workspace styling */
+#workspaces {
+    flex-grow: 1;
+    height: 0;
+}
 
 /* Projects styling */
 #projects {
     flex-grow: 1;
+    height: 0;
 }
 #projects label {
     display: block;

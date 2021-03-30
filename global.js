@@ -1,5 +1,6 @@
 export const default_settings = {
-  suspenderIntegration: true, ignoreZoom: true
+  suspenderIntegration: true, ignoreZoom: true,
+  darkTheme: window.matchMedia('(prefers-color-scheme: dark)').matches
 };
 
 // Adapted from https://stackoverflow.com/a/25612056
