@@ -99,13 +99,23 @@ function renderAllProjects() {
 
 }
 
+function searcher(ev) {
+  for (const entry of document.getElementById(ev.target.dataset.target).children) {
+    if (entry.innerText.toLowerCase().includes(ev.target.value.toLowerCase()))
+      entry.style.display = "block";
+    else
+      entry.style.display = "none";
+  }
+}
+
+
 window.onload = () => {
   console.log("STARTED");
   renderAllProjects();
   document.getElementById('newProj').onclick = _addGroup.bind(this, chrome.tabGroups.TAB_GROUP_ID_NONE);
   document.getElementById('allGrps').onclick = addAllGroups;
   document.getElementById('curGrp').onclick = addCurrentGroup;
-  document.onkeydown = document.onkeyup = ev => ctrlPressed = ev.ctrlKey;
+  document.onkeydown = document.onkeyup = ev => {ctrlPressed = ev.ctrlKey};
 
   // Set scroll shadow height
   for (const rule of document.styleSheets[0].cssRules) {
@@ -113,5 +123,10 @@ window.onload = () => {
       rule.style.height = document.querySelector('.content').getBoundingClientRect().height + 'px';
       break;
     }
+  }
+
+  // Make search boxes searchable
+  for (const search of document.getElementsByClassName('search')) {
+    search.oninput = searcher;
   }
 };
