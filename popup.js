@@ -106,4 +106,12 @@ window.onload = () => {
   document.getElementById('allGrps').onclick = addAllGroups;
   document.getElementById('curGrp').onclick = addCurrentGroup;
   document.onkeydown = document.onkeyup = ev => ctrlPressed = ev.ctrlKey;
+
+  // Set scroll shadow height
+  for (const rule of document.styleSheets[0].cssRules) {
+    if (rule.selectorText === '.content::before') {
+      rule.style.height = document.querySelector('.content').getBoundingClientRect().height + 'px';
+      break;
+    }
+  }
 };
