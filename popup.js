@@ -1,4 +1,5 @@
-/** @typedef {{shortName: string, color: string, tabs: string[]}} tabGroup */
+import {get_default_project, getBookmarkRoot} from './global.js'
+
 const port = chrome.extension.connect({
   name: "Backend"
 });
@@ -69,17 +70,79 @@ function addAllGroups(ev) {
 }
 
 /** Show saved project groups in popup gui */
-function renderAllProjects() {
-  chrome.storage.local.get(null, storage => {
-    const settings = storage.settings;
-    chrome.storage.sync.get(null, items => {
-      for (const [name, details] of Object.entries(items)) {
-        const label = document.createElement('label')
-        const button = document.createElement('button');
-        button.innerText = details.shortName;
-        button.className = "group";
-        button.draggable = true;
-        const colors = settings.darkTheme ? {
+async function renderAllProjects() {
+  // TODO: might be inefficient due to redundant function calls, but necessary to user has not edited folder since last run
+  // Maybe implement some sort of caching with browser.storage.sync to remember the meta IDs?
+  /** @return {AsyncGenerator<import('./global.js').tabGroup, void, *>} */
+  async function* getProjectsMeta() {
+    // Adapted from https://stackoverflow.com/a/13419367
+    function parseQuery(/** string */ queryString) {
+      const query = {};
+      const pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
+      for (let i = 0; i < pairs.length; i++) {
+        const pair = pairs[i].split('=');
+        query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+      }
+      return query;
+    }
+
+    function makeQuery(/** Object */ obj) {
+      const searchStr = [];
+      for (const [key, val] of Object.entries(obj)) {
+        if (val !== undefined && val !== null)
+          searchStr.push(String(key) + '=' + String(val));
+      }
+      return '?' + searchStr.join('&');
+    }
+
+    const projectFolders = (await browser.bookmarks.getChildren((await getBookmarkRoot()).id))
+        .filter(node => node.url === undefined)  // Remove non-folders
+    const projectFolderIds = projectFolders.map(node => node.id);  // Get id of each folder
+    const projectFolderNames = projectFolders.map(node => node.title);  // Get name of each folder
+    // TODO: can have multiple meta bookmarks in same folder
+    // TODO: will projectFolderIds & metadata always correspond?
+    const metadata = (await browser.bookmarks.search({title: 'metadata'}))
+        .filter(node => projectFolderIds.includes(node.parentId))  // Only include metadata that is part of this extension
+
+    console.log(metadata, projectFolderIds, projectFolderNames);
+    // Now, metadata.length <= projectFolders.length, meaning projectFolders is never undefined when looping
+    for (let i=0; i<Math.max(metadata.length, projectFolderIds.length); i++) {
+      if (metadata[i] === undefined) {  // Folder does not have metadata, so create new
+        const newBookmark = await get_default_project();
+        browser.bookmarks.create({index: 0, parentId: projectFolderIds[i], title: "metadata", url: "about:blank" + makeQuery(newBookmark)})
+        yield {index: 0, name: projectFolderNames[i], ...newBookmark};
+        continue;
+      }
+      yield {index: metadata[i].index, name: projectFolderNames[i], ...parseQuery(new URL(metadata[i].url).search)};
+    }
+  }
+
+  /**
+   * Creates two objects from one object, moving the items specified by 'sep' to the new object
+   * @param {Object} obj
+   * @param {string} sep
+   * @return {Object}
+   */
+  function splitObject(obj, ...sep) {
+    const newObj = {}
+    for (const key of sep) {
+      newObj[key] = obj[key];
+      delete obj[key];
+    }
+    return newObj;
+  }
+
+  const settings = (await browser.storage.local.get('settings')).settings;
+  const workspaces = await browser.storage.sync.get(null);
+  const metadata = splitObject(workspaces, 'bookmarkID', 'index');
+  console.log(workspaces, metadata);
+  for await (const details of getProjectsMeta()) {
+    const label = document.createElement('label')
+    const button = document.createElement('button');
+    button.innerText = details.short_name;
+    button.className = "group";
+    button.draggable = true;
+    const colors = settings.darkTheme ? {
           grey: "#bdc1c6", blue: "#8ab4f8", red: "#f28b82", yellow: "#fdd663",
           green: "#81c995", pink: "#ff8bcb", purple: "#d7aefb", cyan: "#78d9ec"
         } :
@@ -87,16 +150,13 @@ function renderAllProjects() {
           grey: "#5f6368", blue: "#1a73e8", red: "#d93025", yellow: "#e37400",
           green: "#1e8e3e", pink: "#d01884", purple: "#9334e6", cyan: "#007b83"
         };
-        button.style.backgroundColor = colors[details.color];
+    button.style.backgroundColor = colors[details.color];
 
-        button.onclick = loadProject.bind(this, name);
-        label.appendChild(button)
-        label.append(name);
-        document.querySelector('#projects.content').appendChild(label);
-      }
-    });
-  });
-
+    button.onclick = loadProject.bind(this, details.name);
+    label.appendChild(button)
+    label.append(details.name);
+    document.querySelector('#projects.content').appendChild(label);
+  }
 }
 
 function searcher(ev) {

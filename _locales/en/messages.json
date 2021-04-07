@@ -5,6 +5,10 @@
   "description": {
     "message": "Saves all tabs, including groups"
   },
+  "folder": {
+    "message": "Session Saver Projects",
+    "description": "name of the bookmarks folder that holds saved urls"
+  },
   "reset": {
     "message": "Reset all settings",
     "description": "Button to restore all settings to default"

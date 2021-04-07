@@ -1,7 +1,47 @@
+/** @typedef {{name: string, short_name: string, color: 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan', id: number, index: number}} tabGroup */
+
+/** @return {Promise<browser.bookmarks.BookmarkTreeNode>} */
+export async function getBookmarkRoot() {
+  const ID = (await browser.storage.sync.get('bookmarkID')).bookmarkID;
+  if (ID === undefined) {
+    const folder = await browser.bookmarks.create({title: chrome.i18n.getMessage("folder")});
+    browser.bookmarks.create({
+      title: chrome.i18n.getMessage("title"),
+      url: chrome.runtime.getURL('popup.html'),
+      parentId: folder.id
+    });
+    browser.storage.sync.set({bookmarkID: folder.id});
+    return folder;
+  }
+  return (await browser.bookmarks.get(ID))[0];
+}
+
 export const default_settings = {
   suspenderIntegration: true, ignoreZoom: true,
   darkTheme: window.matchMedia('(prefers-color-scheme: dark)').matches
 };
+
+/**
+ * @readonly
+ * @enum {string}
+ */
+export const colors = {
+  grey: "grey", blue: "blue", red: "red", yellow: "yellow",
+  green: "green", pink: "pink", purple: "purple", cyan: "cyan"
+};
+
+/** @return {Promise<tabGroup>} */
+export async function get_default_project() {
+  const index = (await browser.storage.sync.get('index')).index + 1 || 0;
+  browser.storage.sync.set({index: index});
+  // TODO: increment index
+
+  return {
+    short_name: "",
+    color: 'grey',
+    id: index
+  }
+}
 
 // Adapted from https://stackoverflow.com/a/25612056
 export function localizeHtmlPage() {
