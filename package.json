@@ -1,0 +1,24 @@
+{
+  "name": "SessionSaver-ext",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build.js",
+  "scripts": {
+    "start": "node build.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funblaster22/SessionSaver.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/funblaster22/SessionSaver/issues"
+  },
+  "homepage": "https://github.com/funblaster22/SessionSaver#readme",
+  "devDependencies": {
+    "@types/chrome": "^0.0.134",
+    "@types/firefox-webext-browser": "^82.0.0"
+  }
+}
