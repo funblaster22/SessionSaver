@@ -1,6 +1,6 @@
 import {get_default_project, getBookmarkRoot} from './global.js'
 
-const port = chrome.extension.connect({
+const port = chrome.runtime.connect({
   name: "Backend"
 });
 port.onMessage.addListener(msg => {

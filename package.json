@@ -1,5 +1,5 @@
 {
-  "name": "SessionSaver-ext",
+  "name": "SessionSaver",
   "version": "1.0.0",
   "description": "",
   "main": "build.js",
@@ -20,5 +20,8 @@
   "devDependencies": {
     "@types/chrome": "^0.0.134",
     "@types/firefox-webext-browser": "^82.0.0"
+  },
+  "dependencies": {
+    "typescript": "^4.3.2"
   }
 }

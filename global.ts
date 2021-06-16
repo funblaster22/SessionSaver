@@ -3,7 +3,7 @@
 /** @return {Promise<browser.bookmarks.BookmarkTreeNode>} */
 export async function getBookmarkRoot() {
   const ID = (await browser.storage.sync.get('bookmarkID')).bookmarkID;
-  if (ID === undefined) {
+  if (ID === undefined || browser.bookmarks.search) {  // TODO: might not work across computers
     const folder = await browser.bookmarks.create({title: chrome.i18n.getMessage("folder")});
     browser.bookmarks.create({
       title: chrome.i18n.getMessage("title"),
@@ -62,4 +62,25 @@ export function localizeHtmlPage() {
       obj.innerHTML = valNewH;
     }
   }
+}
+
+/**
+ * Retrieves from sync storage, then tries local
+ * @param {string | string[] | Object | null} selector
+ * @return {Promise<Object>}
+ */
+export async function getStorage(selector) {
+  return new Promise(res => {
+    chrome.storage.sync.get(selector, syncItems => {
+      chrome.storage.local.get(selector, localItems => res({...localItems, ...syncItems}));
+    });
+  });
+}
+
+/**
+ * Automatically delegates between sync and local (preferring sync) if sync if full
+ * @return {Promise<void>}
+ */
+export async function setStorage() {
+
 }

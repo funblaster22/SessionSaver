@@ -18,9 +18,8 @@ chrome.runtime.onConnect.addListener(function(port) {
               tabGroup = tabGroup[0].id;
               // don't duplicate tabs if exist
               // TODO: set correct order
-              existingTabs = (await new Promise(res =>
-                chrome.tabs.query({/*TODO groupId: tabGroup*/}, tabsInGrp => res(tabsInGrp))
-              )).map(tab => tab.groupId === tabGroup && tab.url);
+              existingTabs = (await browser.tabs.query({/*TODO groupId: tabGroup*/}))
+                  .map(tab => tab.groupId === tabGroup && tab.url);
               console.log("EXISTING", existingTabs);
               urls[name].tabs = urls[name].tabs.filter(tabURL => !existingTabs.includes(tabURL));
             } else {
