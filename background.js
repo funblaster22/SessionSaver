@@ -3,7 +3,7 @@
 });*/
 
 // TODO: make less confusing
-chrome.extension.onConnect.addListener(function(port) {
+chrome.runtime.onConnect.addListener(function(port) {
     console.log("Connected");
     port.onMessage.addListener(cmd => {
       console.log("message received " + cmd);

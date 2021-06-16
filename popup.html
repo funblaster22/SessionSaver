@@ -2,17 +2,35 @@
 <html lang="en">
   <head>
     <title>SessionSaver</title>
-    <script src="popup.js" type="text/javascript" async defer></script>
+    <!-- TODO: remove polyfill once support is added to Chrome -->
+    <script type="application/javascript" src="browser-polyfill.js"></script>
+    <script src="popup.js" type="module"></script>
     <link href="/popup.css" rel="stylesheet" />
   </head>
   <body>
+    <!--template id="project-template">
+      <label>
+        <button draggable="true" class="group">SQL</button>
+        Structured Query Language
+      </label>
+    </template-->
+
     <div id="flex-container">
       <div>
         <h3>Workspaces
           <input class="search" data-target="workspaces" placeholder="Search" />
+          <label>
+            Sort by:
+            <select>
+              <option>Order Added</option>
+              <option selected>Alphabetical</option>
+            </select>
+          </label>
         </h3>
       </div>
-      <div id="workspaces" class="content"></div>
+      <div id="workspaces" class="content">
+
+      </div>
       <div>
         <h3>Projects
           <input class="search" data-target="projects" placeholder="Search" />

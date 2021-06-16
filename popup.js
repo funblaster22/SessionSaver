@@ -17,7 +17,7 @@ function loadProject(name) {
   });
 }
 
-async function _addGroup(/** chrome.TabGroup | int */ tabGroup) /** void */ {
+async function _addGroup(/** chrome.TabGroup | int */ tabGroup) {
   let shortName = "";
   if (!Number.isInteger(tabGroup)) {
     tabGroup = tabGroup.id;
@@ -25,7 +25,7 @@ async function _addGroup(/** chrome.TabGroup | int */ tabGroup) /** void */ {
   } else if (tabGroup !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
     shortName = (await new Promise(res => chrome.tabGroups.get(tabGroup, group => res(group)))).title;
   }
-  chrome.storage.sync.get(null, storage => {
+  chrome.storage.sync.get('index', storage => {
     const allProjects = Object.values(storage).map(val => val.shortName);
     console.log(shortName, allProjects);
     if (allProjects.includes(shortName)) {
@@ -71,6 +71,8 @@ function addAllGroups(ev) {
 
 /** Show saved project groups in popup gui */
 async function renderAllProjects() {
+  let totalProjects;
+
   // TODO: might be inefficient due to redundant function calls, but necessary to user has not edited folder since last run
   // Maybe implement some sort of caching with browser.storage.sync to remember the meta IDs?
   /** @return {AsyncGenerator<import('./global.js').tabGroup, void, *>} */
@@ -95,6 +97,38 @@ async function renderAllProjects() {
       return '?' + searchStr.join('&');
     }
 
+    // DB query: O(?) + O(?)
+    // Best time: O(n)
+    // Worst time: O(n*m) + O
+    // Where N is the number of projects, and M is the number of metadata bookmarks, which will likely equal N
+    const subtree = (await browser.bookmarks.getSubTree((await getBookmarkRoot()).id))[0];
+    const metadata = await browser.bookmarks.search({title: 'metadata'});  // TODO: map to just index?
+    totalProjects = subtree.children.length;
+    for (const project of subtree.children) {
+      let metaIndex;
+      if (!project.children) continue;  // Ignore non-folders
+      if (project.children[0].title === 'metadata') {  // TODO: add check to ensure url is correct
+        metaIndex = 0;
+      } else {
+        for (const bookmark of metadata) {  // If metadata is not first bookmark in project, check indices of metadata
+          console.log(bookmark.title);
+          if (project.id === bookmark.parentId) {
+            // TODO: remove index once it is found?
+            metaIndex = bookmark.index;
+            break;
+          }
+        }
+        if (metaIndex === undefined) {  // Folder does not have metadata, so create new
+          const newBookmark = await get_default_project();
+          browser.bookmarks.create({index: 0, parentId: project.id, title: "metadata", url: "about:blank" + makeQuery(newBookmark)})
+          yield {index: 0, name: project.title, ...newBookmark};
+          continue;
+        }
+      }
+      yield {index: metaIndex, name: project.title, ...parseQuery(new URL(project.children[metaIndex].url).search)};
+    }
+
+    /*// Time Complexity: 4*O(n) + O(m)
     const projectFolders = (await browser.bookmarks.getChildren((await getBookmarkRoot()).id))
         .filter(node => node.url === undefined)  // Remove non-folders
     const projectFolderIds = projectFolders.map(node => node.id);  // Get id of each folder
@@ -105,6 +139,8 @@ async function renderAllProjects() {
         .filter(node => projectFolderIds.includes(node.parentId))  // Only include metadata that is part of this extension
 
     console.log(metadata, projectFolderIds, projectFolderNames);
+    totalProjects = projectFolderIds.length;
+    console.log("Used memory:", window.performance.memory.usedJSHeapSize / 100000);
     // Now, metadata.length <= projectFolders.length, meaning projectFolders is never undefined when looping
     for (let i=0; i<Math.max(metadata.length, projectFolderIds.length); i++) {
       if (metadata[i] === undefined) {  // Folder does not have metadata, so create new
@@ -114,7 +150,7 @@ async function renderAllProjects() {
         continue;
       }
       yield {index: metadata[i].index, name: projectFolderNames[i], ...parseQuery(new URL(metadata[i].url).search)};
-    }
+    }*/
   }
 
   /**
@@ -132,6 +168,7 @@ async function renderAllProjects() {
     return newObj;
   }
 
+  const startTime = new Date().getTime();
   const settings = (await browser.storage.local.get('settings')).settings;
   const workspaces = await browser.storage.sync.get(null);
   const metadata = splitObject(workspaces, 'bookmarkID', 'index');
@@ -157,6 +194,8 @@ async function renderAllProjects() {
     label.append(details.name);
     document.querySelector('#projects.content').appendChild(label);
   }
+  console.log("Average time to load each project:", (new Date().getTime() - startTime) / totalProjects + "ms");
+  localStorage.loadTime += (new Date().getTime() - startTime) / totalProjects + " ";
 }
 
 function searcher(ev) {
