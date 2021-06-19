@@ -3,37 +3,40 @@
 });*/
 
 // TODO: make less confusing
-chrome.runtime.onConnect.addListener(function(port) {
+
+chrome.runtime.onConnect.addListener(port => {
     console.log("Connected");
     port.onMessage.addListener(cmd => {
       console.log("message received " + cmd);
       if (cmd[0] === "load") {
         const tabs = [];
-        const name = cmd[1];  // TODO: rename more descriptive, like projectName or groupName
-        chrome.storage.sync.get(name, urls => {  // TODO: rename urls to 'storage' and urls=storage[name]
-          chrome.tabGroups.query({color: urls[name].color, title: urls[name].shortName, windowId: chrome.windows.WINDOW_ID_CURRENT}, async tabGroup => {
+        const projectName = cmd[1];
+        chrome.storage.sync.get(projectName, storage => {
+          const urls = storage[projectName];  // TODO: what is this type?
+          chrome.tabGroups.query({color: urls.color, title: urls.shortName, windowId: chrome.windows.WINDOW_ID_CURRENT}, async tabGroup => {
             // Add tabs to existing group, if exists
             let existingTabs = [];
+            let tabGroupId: number | undefined;
             if (tabGroup.length === 1) {
-              tabGroup = tabGroup[0].id;
+              tabGroupId = tabGroup[0].id;
               // don't duplicate tabs if exist
               // TODO: set correct order
-              existingTabs = (await browser.tabs.query({/*TODO groupId: tabGroup*/}))
-                  .map(tab => tab.groupId === tabGroup && tab.url);
+              existingTabs = (await chrome.tabs.query({/*TODO groupId: tabGroup*/}))
+                  .map(tab => tab.groupId === tabGroupId && tab.url);
               console.log("EXISTING", existingTabs);
-              urls[name].tabs = urls[name].tabs.filter(tabURL => !existingTabs.includes(tabURL));
+              urls.tabs = urls.tabs.filter(tabURL => !existingTabs.includes(tabURL));
             } else {
-              tabGroup = undefined;
+              tabGroupId = undefined;
             }
-            for (const url of urls[name].tabs) {
+            for (const url of urls.tabs) {
               chrome.tabs.create({url: url}, tab => {
                 tabs.push(tab.id);
-                if (tabs.length === urls[name].tabs.length) {  // Run here after all tabs loaded
+                if (tabs.length === urls.tabs.length) {  // Run here after all tabs loaded
                   console.log(tabs);
-                  chrome.tabs.group({tabIds: tabs, groupId: tabGroup}, groupId => {
+                  chrome.tabs.group({tabIds: tabs, groupId: tabGroupId}, groupId => {
                     chrome.tabs.highlight({tabs: tabs});  // Documentation says to use index, but seems to work fine with ID
-                    // TODO: make hilight new tabs every time, even if no new tabs were added
-                    chrome.tabGroups.update(groupId, {title: urls[name].shortName, color: urls[name].color});
+                    // TODO: make highlight new tabs every time, even if no new tabs were added
+                    chrome.tabGroups.update(groupId, {title: urls.shortName, color: urls.color});
                   });
                 }
               });

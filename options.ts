@@ -1,11 +1,11 @@
-import {default_settings, localizeHtmlPage} from "./global.js";
+import {default_settings, localizeHtmlPage, Settings} from "./global.js";
 
 localizeHtmlPage();
-let settings;
+let settings: Settings;
 
 
-function updateSettings(ev) {
-  const target = ev.target;
+function updateSettings(ev: Event) {
+  const target = ev.target as HTMLInputElement;
   console.log(target.checked, settings);
   settings[target.name] = target.checked;
 

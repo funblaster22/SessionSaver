@@ -1,4 +1,4 @@
-import {get_default_project, getBookmarkRoot} from './global.js'
+import {get_default_project, getBookmarkRoot, TabGroup} from './global.js'
 
 const port = chrome.runtime.connect({
   name: "Backend"
@@ -23,7 +23,7 @@ async function _addGroup(/** chrome.TabGroup | int */ tabGroup) {
     tabGroup = tabGroup.id;
     shortName = tabGroup.title;
   } else if (tabGroup !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
-    shortName = (await new Promise(res => chrome.tabGroups.get(tabGroup, group => res(group)))).title;
+    shortName = (await chrome.tabGroups.get(tabGroup)).title;
   }
   chrome.storage.sync.get('index', storage => {
     const allProjects = Object.values(storage).map(val => val.shortName);
@@ -75,10 +75,9 @@ async function renderAllProjects() {
 
   // TODO: might be inefficient due to redundant function calls, but necessary to user has not edited folder since last run
   // Maybe implement some sort of caching with browser.storage.sync to remember the meta IDs?
-  /** @return {AsyncGenerator<import('./global.js').tabGroup, void, *>} */
-  async function* getProjectsMeta() {
+  async function* getProjectsMeta(): AsyncGenerator<TabGroup, void, any> {
     // Adapted from https://stackoverflow.com/a/13419367
-    function parseQuery(/** string */ queryString) {
+    function parseQuery(queryString: string): { [x: string]: string } {
       const query = {};
       const pairs = (queryString[0] === '?' ? queryString.substr(1) : queryString).split('&');
       for (let i = 0; i < pairs.length; i++) {
@@ -105,7 +104,7 @@ async function renderAllProjects() {
     const metadata = await browser.bookmarks.search({title: 'metadata'});  // TODO: map to just index?
     totalProjects = subtree.children.length;
     for (const project of subtree.children) {
-      let metaIndex;
+      let metaIndex: number | undefined;
       if (!project.children) continue;  // Ignore non-folders
       if (project.children[0].title === 'metadata') {  // TODO: add check to ensure url is correct
         metaIndex = 0;
@@ -125,7 +124,9 @@ async function renderAllProjects() {
           continue;
         }
       }
-      yield {index: metaIndex, name: project.title, ...parseQuery(new URL(project.children[metaIndex].url).search)};
+      const projMetadata = parseQuery(new URL(project.children[metaIndex].url).search);
+      yield {index: metaIndex, name: project.title,
+        short_name: projMetadata.short_name || "", id: parseInt(projMetadata.id) || (await get_default_project()).id, color: projMetadata.color as chrome.tabGroups.ColorEnum || "grey"};
     }
 
     /*// Time Complexity: 4*O(n) + O(m)
@@ -153,13 +154,8 @@ async function renderAllProjects() {
     }*/
   }
 
-  /**
-   * Creates two objects from one object, moving the items specified by 'sep' to the new object
-   * @param {Object} obj
-   * @param {string} sep
-   * @return {Object}
-   */
-  function splitObject(obj, ...sep) {
+  /** Creates two objects from one object, moving the items specified by 'sep' to the new object */
+  function splitObject(obj: object, ...sep: string[]): object {
     const newObj = {}
     for (const key of sep) {
       newObj[key] = obj[key];
@@ -199,11 +195,8 @@ async function renderAllProjects() {
 }
 
 function searcher(ev) {
-  for (const entry of document.getElementById(ev.target.dataset.target).children) {
-    if (entry.innerText.toLowerCase().includes(ev.target.value.toLowerCase()))
-      entry.style.display = "block";
-    else
-      entry.style.display = "none";
+  for (const entry of document.getElementById(ev.target.dataset.target).children as HTMLCollectionOf<HTMLElement>) {
+    entry.style.display = entry.innerText.toLowerCase().includes(ev.target.value.toLowerCase()) ? "block" : "none";
   }
 }
 
@@ -218,14 +211,14 @@ window.onload = () => {
 
   // Set scroll shadow height
   for (const rule of document.styleSheets[0].cssRules) {
-    if (rule.selectorText === '.content::before') {
+    if (rule instanceof CSSStyleRule && rule.selectorText === '.content::before') {
       rule.style.height = document.querySelector('.content').getBoundingClientRect().height + 'px';
       break;
     }
   }
 
   // Make search boxes searchable
-  for (const search of document.getElementsByClassName('search')) {
+  for (const search of document.getElementsByClassName('search') as HTMLCollectionOf<HTMLElement>) {
     search.oninput = searcher;
   }
 };

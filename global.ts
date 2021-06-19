@@ -1,6 +1,18 @@
-/** @typedef {{name: string, short_name: string, color: 'grey' | 'blue' | 'red' | 'yellow' | 'green' | 'pink' | 'purple' | 'cyan', id: number, index: number}} tabGroup */
+// TODO: use 'chrome' instead of 'browser' namespace once most everything is promisified, b/c browser does not have typings for tabGroup
+// TODO: enable strict null checking in tsconfig with strictNullChecks=true
 
-/** @return {Promise<browser.bookmarks.BookmarkTreeNode>} */
+export interface TabGroup {
+  name: string;
+  short_name: string;
+  color: chrome.tabGroups.ColorEnum,
+  id: number;
+  index: number;
+}
+
+export interface StorageSchema {  // TODO
+  bookmarkId: string | undefined;
+}
+
 export async function getBookmarkRoot() {
   const ID = (await browser.storage.sync.get('bookmarkID')).bookmarkID;
   if (ID === undefined || browser.bookmarks.search) {  // TODO: might not work across computers
@@ -16,10 +28,16 @@ export async function getBookmarkRoot() {
   return (await browser.bookmarks.get(ID))[0];
 }
 
-export const default_settings = {
+export const default_settings: Settings = {
   suspenderIntegration: true, ignoreZoom: true,
   darkTheme: window.matchMedia('(prefers-color-scheme: dark)').matches
 };
+
+export interface Settings {
+  suspenderIntegration: boolean;
+  ignoreZoom: boolean;
+  darkTheme: boolean;
+}
 
 /**
  * @readonly
@@ -30,10 +48,10 @@ export const colors = {
   green: "green", pink: "pink", purple: "purple", cyan: "cyan"
 };
 
-/** @return {Promise<tabGroup>} */
-export async function get_default_project() {
+/** @return {Promise<TabGroup>} */
+export async function get_default_project(): Promise<{ short_name: string, color: chrome.tabGroups.ColorEnum, id: number }> {
   const index = (await browser.storage.sync.get('index')).index + 1 || 0;
-  browser.storage.sync.set({index: index});
+  chrome.storage.sync.set({index: index});
   // TODO: increment index
 
   return {
@@ -46,41 +64,17 @@ export async function get_default_project() {
 // Adapted from https://stackoverflow.com/a/25612056
 export function localizeHtmlPage() {
   //Localize by replacing __MSG_***__ meta tags
-  var objects = document.getElementsByTagName('html');
-  for (var j = 0; j < objects.length; j++)
-  {
-    var obj = objects[j];
+  const objects = document.getElementsByTagName('html');
+  for (let j = 0; j < objects.length; j++) {
+    const obj = objects[j];
 
-    var valStrH = obj.innerHTML.toString();
-    var valNewH = valStrH.replace(/__MSG_(\w+)__/g, function(match, v1)
-    {
+    const valStrH = obj.innerHTML.toString();
+    const valNewH = valStrH.replace(/__MSG_(\w+)__/g, function (match, v1) {
       return v1 ? chrome.i18n.getMessage(v1) : "";
     });
 
-    if(valNewH != valStrH)
-    {
+    if (valNewH != valStrH) {
       obj.innerHTML = valNewH;
     }
   }
-}
-
-/**
- * Retrieves from sync storage, then tries local
- * @param {string | string[] | Object | null} selector
- * @return {Promise<Object>}
- */
-export async function getStorage(selector) {
-  return new Promise(res => {
-    chrome.storage.sync.get(selector, syncItems => {
-      chrome.storage.local.get(selector, localItems => res({...localItems, ...syncItems}));
-    });
-  });
-}
-
-/**
- * Automatically delegates between sync and local (preferring sync) if sync if full
- * @return {Promise<void>}
- */
-export async function setStorage() {
-
 }
