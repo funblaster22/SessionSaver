@@ -1,0 +1,46 @@
+lockfileVersion: 5.3
+
+specifiers:
+  '@types/chrome': ^0.0.158
+  '@types/firefox-webext-browser': ^82.0.0
+  typescript: ^4.3.4
+
+dependencies:
+  typescript: 4.3.4
+
+devDependencies:
+  '@types/chrome': 0.0.158
+  '@types/firefox-webext-browser': 82.0.0
+
+packages:
+
+  /@types/chrome/0.0.158:
+    resolution: {integrity: sha512-sjBs9E/XDlYyLf3YkPYIN6sFZ/d9LbwMSK+BYphenFdkk39M5P8xcRfykk54RgZr8/QMex1yKlX5EB52TaqhsQ==}
+    dependencies:
+      '@types/filesystem': 0.0.30
+      '@types/har-format': 1.2.6
+    dev: true
+
+  /@types/filesystem/0.0.30:
+    resolution: {integrity: sha512-NCoRgmGmLpTT9VFL6Bb6z0jQuqI3d0E5FGl7M0JOv/J5RQYo9s5aOItPYnpckx9MbYQk1APLXcF8f20Vqnf2yA==}
+    dependencies:
+      '@types/filewriter': 0.0.29
+    dev: true
+
+  /@types/filewriter/0.0.29:
+    resolution: {integrity: sha512-BsPXH/irW0ht0Ji6iw/jJaK8Lj3FJemon2gvEqHKpCdDCeemHa+rI3WBGq5z7cDMZgoLjY40oninGxqk+8NzNQ==}
+    dev: true
+
+  /@types/firefox-webext-browser/82.0.0:
+    resolution: {integrity: sha512-zKHePkjMx42KIUUZCPcUiyu1tpfQXH9VR4iDYfns3HvmKVJzt/TAFT+DFVroos8BI9RH78YgF3Hi/wlC6R6cKA==}
+    dev: true
+
+  /@types/har-format/1.2.6:
+    resolution: {integrity: sha512-TeZjp4COiAWPOeGx1tuFJETr/SBMx80lxqeqnCC36ZVn463f7ElCdA3X9RzDuo3BHjhN4apw41A5uoIw5FzgWA==}
+    dev: true
+
+  /typescript/4.3.4:
+    resolution: {integrity: sha512-uauPG7XZn9F/mo+7MrsRjyvbxFpzemRjKEZXS4AK83oP2KKOJPvb+9cO/gmnv8arWZvhnjVOXz7B49m1l0e9Ew==}
+    engines: {node: '>=4.2.0'}
+    hasBin: true
+    dev: false

@@ -4,7 +4,7 @@
   "description": "",
   "main": "build.js",
   "scripts": {
-    "start": "node build.js",
+    "build": "node build.js",
     "dev": "tsc -w"
   },
   "repository": {
@@ -13,13 +13,13 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "GPL-v3",
   "bugs": {
     "url": "https://github.com/funblaster22/SessionSaver/issues"
   },
   "homepage": "https://github.com/funblaster22/SessionSaver#readme",
   "devDependencies": {
-    "@types/chrome": "^0.0.145",
+    "@types/chrome": "^0.0.158",
     "@types/firefox-webext-browser": "^82.0.0"
   },
   "dependencies": {
