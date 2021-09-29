@@ -6,11 +6,10 @@ export interface TabGroup {
   short_name: string;
   color: chrome.tabGroups.ColorEnum,
   id: number;
-  index: number;
 }
 
 export interface StorageSchema {  // TODO
-  bookmarkId: string | undefined;
+  bookmarkId?: string;
 }
 
 export async function getBookmarkRoot() {
@@ -48,16 +47,15 @@ export const colors = {
   green: "green", pink: "pink", purple: "purple", cyan: "cyan"
 };
 
-/** @return {Promise<TabGroup>} */
-export async function get_default_project(): Promise<{ short_name: string, color: chrome.tabGroups.ColorEnum, id: number }> {
+export async function get_default_project() {
   const index = (await browser.storage.sync.get('index')).index + 1 || 0;
   chrome.storage.sync.set({index: index});
   // TODO: increment index
 
   return {
     short_name: "",
-    color: 'grey',
-    id: index
+    color: 'grey' as chrome.tabGroups.ColorEnum,
+    id: index as number
   }
 }
 

@@ -17,7 +17,7 @@ function loadProject(name) {
   });
 }
 
-async function _addGroup(/** chrome.TabGroup | int */ tabGroup) {
+async function _addGroup(tabGroup: chrome.tabGroups.TabGroup|number): Promise<void> {
   let shortName = "";
   if (!Number.isInteger(tabGroup)) {
     tabGroup = tabGroup.id;
@@ -87,7 +87,7 @@ async function renderAllProjects() {
       return query;
     }
 
-    function makeQuery(/** Object */ obj) {
+    function makeQuery(obj: { [s: string]: any; }) {
       const searchStr = [];
       for (const [key, val] of Object.entries(obj)) {
         if (val !== undefined && val !== null)
