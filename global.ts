@@ -15,7 +15,7 @@ export interface StorageSchema {  // TODO
 
 export async function getBookmarkRoot() {
   const ID = (await browser.storage.sync.get('bookmarkID')).bookmarkID;
-  if (ID === undefined || browser.bookmarks.search) {  // TODO: might not work across computers
+  if (ID === undefined || (await browser.bookmarks.get(ID).catch(() => [])).length === 0) {  // TODO: might not work across computers
     const folder = await browser.bookmarks.create({title: chrome.i18n.getMessage("folder")});
     browser.bookmarks.create({
       title: chrome.i18n.getMessage("title"),

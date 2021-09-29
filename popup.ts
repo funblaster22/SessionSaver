@@ -1,4 +1,4 @@
-import {get_default_project, getBookmarkRoot, TabGroup} from './global.js'
+import {default_settings, get_default_project, getBookmarkRoot, Settings, TabGroup} from './global.js'
 
 const port = chrome.runtime.connect({
   name: "Backend"
@@ -165,10 +165,11 @@ async function renderAllProjects() {
   }
 
   const startTime = new Date().getTime();
-  const settings = (await browser.storage.local.get('settings')).settings;
+  const settings: Settings = (await browser.storage.local.get('settings'))?.settings || default_settings;
   const workspaces = await browser.storage.sync.get(null);
   const metadata = splitObject(workspaces, 'bookmarkID', 'index');
-  console.log(workspaces, metadata);
+  console.log("Workspaces", workspaces);
+  console.log("Metadata", metadata);
   for await (const details of getProjectsMeta()) {
     const label = document.createElement('label')
     const button = document.createElement('button');
