@@ -73,8 +73,6 @@ function addAllGroups(ev) {
 async function renderAllProjects() {
   let totalProjects;
 
-  // TODO: might be inefficient due to redundant function calls, but necessary to user has not edited folder since last run
-  // Maybe implement some sort of caching with browser.storage.sync to remember the meta IDs?
   async function* getProjectsMeta(): AsyncGenerator<TabGroup, void, any> {
     // Adapted from https://stackoverflow.com/a/13419367
     function parseQuery(queryString: string): { [x: string]: string } {
@@ -96,62 +94,27 @@ async function renderAllProjects() {
       return '?' + searchStr.join('&');
     }
 
-    // DB query: O(?) + O(?)
-    // Best time: O(n)
-    // Worst time: O(n*m) + O
-    // Where N is the number of projects, and M is the number of metadata bookmarks, which will likely equal N
-    const subtree = (await browser.bookmarks.getSubTree((await getBookmarkRoot()).id))[0];
-    const metadata = await browser.bookmarks.search({title: 'metadata'});  // TODO: map to just index?
-    totalProjects = subtree.children.length;
-    for (const project of subtree.children) {
-      let metaIndex: number | undefined;
-      if (!project.children) continue;  // Ignore non-folders
-      if (project.children[0].title === 'metadata') {  // TODO: add check to ensure url is correct
-        metaIndex = 0;
-      } else {
-        for (const bookmark of metadata) {  // If metadata is not first bookmark in project, check indices of metadata
-          console.log(bookmark.title);
-          if (project.id === bookmark.parentId) {
-            // TODO: remove index once it is found?
-            metaIndex = bookmark.index;
-            break;
-          }
-        }
-        if (metaIndex === undefined) {  // Folder does not have metadata, so create new
-          const newBookmark = await get_default_project();
-          browser.bookmarks.create({index: 0, parentId: project.id, title: "metadata", url: "about:blank" + makeQuery(newBookmark)})
-          yield {index: 0, name: project.title, ...newBookmark};
-          continue;
-        }
-      }
-      const projMetadata = parseQuery(new URL(project.children[metaIndex].url).search);
-      yield {index: metaIndex, name: project.title,
-        short_name: projMetadata.short_name || "", id: parseInt(projMetadata.id) || (await get_default_project()).id, color: projMetadata.color as chrome.tabGroups.ColorEnum || "grey"};
-    }
-
-    /*// Time Complexity: 4*O(n) + O(m)
+    // Map<folder ID, folder name>
     const projectFolders = (await browser.bookmarks.getChildren((await getBookmarkRoot()).id))
-        .filter(node => node.url === undefined)  // Remove non-folders
-    const projectFolderIds = projectFolders.map(node => node.id);  // Get id of each folder
-    const projectFolderNames = projectFolders.map(node => node.title);  // Get name of each folder
-    // TODO: can have multiple meta bookmarks in same folder
-    // TODO: will projectFolderIds & metadata always correspond?
-    const metadata = (await browser.bookmarks.search({title: 'metadata'}))
-        .filter(node => projectFolderIds.includes(node.parentId))  // Only include metadata that is part of this extension
-
-    console.log(metadata, projectFolderIds, projectFolderNames);
-    totalProjects = projectFolderIds.length;
-    console.log("Used memory:", window.performance.memory.usedJSHeapSize / 100000);
-    // Now, metadata.length <= projectFolders.length, meaning projectFolders is never undefined when looping
-    for (let i=0; i<Math.max(metadata.length, projectFolderIds.length); i++) {
-      if (metadata[i] === undefined) {  // Folder does not have metadata, so create new
-        const newBookmark = await get_default_project();
-        browser.bookmarks.create({index: 0, parentId: projectFolderIds[i], title: "metadata", url: "about:blank" + makeQuery(newBookmark)})
-        yield {index: 0, name: projectFolderNames[i], ...newBookmark};
-        continue;
+        .reduce<Map<string, string>>((acc, item) => {
+          if (!item.url) acc.set(item.id, item.title);  // Ensure item is a folder
+          return acc;
+        }, new Map());
+    for (const node of await browser.bookmarks.search({title: 'metadata'})) {
+      if (node.url && projectFolders.has(node.parentId)) {  // Ensure not a folder & within the SessionSaver directory
+        const projMetadata = parseQuery(new URL(node.url).search) as {[P in keyof TabGroup]: string};
+        yield {name: projectFolders.get(node.parentId), short_name: projMetadata.short_name || "",
+          id: parseInt(projMetadata.id) || (await get_default_project()).id,
+          color: projMetadata.color as chrome.tabGroups.ColorEnum || "grey"};
+        projectFolders.delete(node.parentId);
       }
-      yield {index: metadata[i].index, name: projectFolderNames[i], ...parseQuery(new URL(metadata[i].url).search)};
-    }*/
+    }
+    for (const [orphanFolderId, orphanFolderName] of projectFolders.entries()) {
+      // Create a metadata entry for folders that do not have one
+      const newBookmark = await get_default_project();
+      browser.bookmarks.create({index: 0, parentId: orphanFolderId, title: "metadata", url: "about:blank" + makeQuery(newBookmark)})
+      yield {name: orphanFolderName, ...newBookmark};
+    }
   }
 
   /** Creates two objects from one object, moving the items specified by 'sep' to the new object */
