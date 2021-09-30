@@ -1,4 +1,4 @@
-import {default_settings, get_default_project, getBookmarkRoot, Settings, TabGroup} from './global.js'
+import {bookmarkRootID, default_settings, get_default_project, getBookmarkRoot, Settings, TabGroup} from './global.js'
 
 const port = chrome.runtime.connect({
   name: "Backend"
@@ -19,32 +19,26 @@ function loadProject(name) {
 
 async function _addGroup(tabGroup: chrome.tabGroups.TabGroup|number): Promise<void> {
   let shortName = "";
-  if (!Number.isInteger(tabGroup)) {
-    tabGroup = tabGroup.id;
+  if (typeof tabGroup !== 'number') {
     shortName = tabGroup.title;
+    tabGroup = tabGroup.id;
   } else if (tabGroup !== chrome.tabGroups.TAB_GROUP_ID_NONE) {
     shortName = (await chrome.tabGroups.get(tabGroup)).title;
   }
-  chrome.storage.sync.get('index', storage => {
-    const allProjects = Object.values(storage).map(val => val.shortName);
-    console.log(shortName, allProjects);
-    if (allProjects.includes(shortName)) {
-      // TODO: don't skip, instead set `name`
-      console.log(`project '${shortName}' already exists, skipping`);
-      return;
-    }
 
-    chrome.tabs.query({currentWindow: true/*, groupId: tabGroup*/}, tabs => {
-      // TODO: for some reason, querying by group ID does not work in chrome 89, try again later
-      tabs = tabs.filter(tab => tab.groupId === tabGroup);
-      const name = prompt('What is the project name of "' + shortName + '"?')
-      if (name == null) return;
-      chrome.tabs.group({tabIds: tabs.map(tab => tab.id), groupId: tabGroup === chrome.tabGroups.TAB_GROUP_ID_NONE ? undefined : tabGroup}, groupId => {
-        // get actual color
-        chrome.tabGroups.get(groupId, group => {
-          chrome.storage.sync.set({[name]: {shortName: shortName, color: group.color, tabs: tabs.map(tab => tab.url)}});
-        });
-      });
+  const longName = prompt('What is the project name of "' + shortName + '"?')
+  // TODO: duplicate detection by longName or shortName, don't add groups that are being tracked
+
+  const projectFolder = (await chrome.bookmarks.create({title: longName, parentId: await bookmarkRootID})).id;
+  const tabs = await chrome.tabs.query({currentWindow: true, groupId: tabGroup});
+  for (const tab of tabs)
+    chrome.bookmarks.create({url: tab.url, title: tab.title, parentId: projectFolder});
+  chrome.tabs.group({tabIds: tabs.map(tab => tab.id), groupId: tabGroup === chrome.tabGroups.TAB_GROUP_ID_NONE ? undefined : tabGroup}, groupId => {
+    // get actual color
+    chrome.tabGroups.get(groupId, group => {
+      chrome.bookmarks.create({index: 0, title: "metadata", parentId: projectFolder, url: 'about:blank' + makeQuery(
+        {short_name: shortName, color: group.color}
+      )});
     });
   });
 }
@@ -69,6 +63,16 @@ function addAllGroups(ev) {
   });
 }
 
+// Convert object to HTML query string
+function makeQuery(obj: { [s: string]: any; }) {
+  const searchStr = [];
+  for (const [key, val] of Object.entries(obj)) {
+    if (val !== undefined && val !== null)
+      searchStr.push(String(key) + '=' + String(val));
+  }
+  return '?' + searchStr.join('&');
+}
+
 /** Show saved project groups in popup gui */
 async function renderAllProjects() {
   let totalProjects;
@@ -83,15 +87,6 @@ async function renderAllProjects() {
         query[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
       }
       return query;
-    }
-
-    function makeQuery(obj: { [s: string]: any; }) {
-      const searchStr = [];
-      for (const [key, val] of Object.entries(obj)) {
-        if (val !== undefined && val !== null)
-          searchStr.push(String(key) + '=' + String(val));
-      }
-      return '?' + searchStr.join('&');
     }
 
     // Map<folder ID, folder name>

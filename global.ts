@@ -12,6 +12,7 @@ export interface StorageSchema {  // TODO
   bookmarkId?: string;
 }
 
+export const bookmarkRootID = getBookmarkRoot().then(bookmark => bookmark.id);
 export async function getBookmarkRoot() {
   const ID = (await browser.storage.sync.get('bookmarkID')).bookmarkID;
   if (ID === undefined || (await browser.bookmarks.get(ID).catch(() => [])).length === 0) {  // TODO: might not work across computers
@@ -50,7 +51,6 @@ export const colors = {
 export async function get_default_project() {
   const index = (await browser.storage.sync.get('index')).index + 1 || 0;
   chrome.storage.sync.set({index: index});
-  // TODO: increment index
 
   return {
     short_name: "",
