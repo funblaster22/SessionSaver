@@ -3,9 +3,9 @@
 
 export interface TabGroup {
   name: string;
-  short_name: string;
+  shortname: string;
   color: chrome.tabGroups.ColorEnum,
-  id: number;
+  id: string;
 }
 
 export interface StorageSchema {  // TODO
@@ -48,16 +48,10 @@ export const colors = {
   green: "green", pink: "pink", purple: "purple", cyan: "cyan"
 };
 
-export async function get_default_project() {
-  const index = (await browser.storage.sync.get('index')).index + 1 || 0;
-  chrome.storage.sync.set({index: index});
-
-  return {
-    short_name: "",
-    color: 'grey' as chrome.tabGroups.ColorEnum,
-    id: index as number
-  }
-}
+export const default_project = {
+  shortname: "",
+  color: 'grey' as chrome.tabGroups.ColorEnum
+};
 
 // Adapted from https://stackoverflow.com/a/25612056
 export function localizeHtmlPage() {

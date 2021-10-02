@@ -1,4 +1,11 @@
-import {bookmarkRootID, default_settings, get_default_project, getBookmarkRoot, Settings, TabGroup} from './global.js'
+import {
+  bookmarkRootID,
+  default_project,
+  default_settings,
+  getBookmarkRoot,
+  Settings,
+  TabGroup
+} from './global.js'
 
 const port = chrome.runtime.connect({
   name: "Backend"
@@ -8,13 +15,12 @@ port.onMessage.addListener(msg => {
 });
 let ctrlPressed = false;
 
-function loadProject(name) {
+async function loadProject(ev) {
   // TODO: don't open new tab in addition
-  chrome.windows.create({focused: true}, () => {
-    // Tab loading logic must occur in background b/c popup gets terminated before adding to group
-    port.postMessage(["load", name]);
-    window.close();
-  });
+  if (ctrlPressed) await chrome.windows.create({focused: true});
+  // Tab loading logic must occur in background b/c popup gets terminated before adding to group
+  port.postMessage(["load", {id: ev.target.id, ...ev.target.dataset}]);
+  //TODO: remove once done debugging window.close();
 }
 
 async function _addGroup(tabGroup: chrome.tabGroups.TabGroup|number): Promise<void> {
@@ -75,7 +81,7 @@ function makeQuery(obj: { [s: string]: any; }) {
 
 /** Show saved project groups in popup gui */
 async function renderAllProjects() {
-  let totalProjects;
+  let totalProjects = 0;
 
   async function* getProjectsMeta(): AsyncGenerator<TabGroup, void, any> {
     // Adapted from https://stackoverflow.com/a/13419367
@@ -98,17 +104,16 @@ async function renderAllProjects() {
     for (const node of await browser.bookmarks.search({title: 'metadata'})) {
       if (node.url && projectFolders.has(node.parentId)) {  // Ensure not a folder & within the SessionSaver directory
         const projMetadata = parseQuery(new URL(node.url).search) as {[P in keyof TabGroup]: string};
-        yield {name: projectFolders.get(node.parentId), short_name: projMetadata.short_name || "",
-          id: parseInt(projMetadata.id) || (await get_default_project()).id,
+        yield {name: projectFolders.get(node.parentId), shortname: projMetadata.shortname || "",
+          id: node.parentId,
           color: projMetadata.color as chrome.tabGroups.ColorEnum || "grey"};
         projectFolders.delete(node.parentId);
       }
     }
     for (const [orphanFolderId, orphanFolderName] of projectFolders.entries()) {
       // Create a metadata entry for folders that do not have one
-      const newBookmark = await get_default_project();
-      browser.bookmarks.create({index: 0, parentId: orphanFolderId, title: "metadata", url: "about:blank" + makeQuery(newBookmark)})
-      yield {name: orphanFolderName, ...newBookmark};
+      browser.bookmarks.create({index: 0, parentId: orphanFolderId, title: "metadata", url: "about:blank" + makeQuery(default_project)})
+      yield {name: orphanFolderName, id: orphanFolderId, ...default_project};
     }
   }
 
@@ -129,9 +134,13 @@ async function renderAllProjects() {
   console.log("Workspaces", workspaces);
   console.log("Metadata", metadata);
   for await (const details of getProjectsMeta()) {
-    const label = document.createElement('label')
+    totalProjects++;
+    const label = document.createElement('label');
     const button = document.createElement('button');
-    button.innerText = details.short_name;
+    button.id = details.id;
+    button.dataset.color = details.color;
+    button.dataset.shortname = details.shortname;
+    button.innerText = details.shortname;
     button.className = "group";
     button.draggable = true;
     const colors = settings.darkTheme ? {
@@ -144,11 +153,12 @@ async function renderAllProjects() {
         };
     button.style.backgroundColor = colors[details.color];
 
-    button.onclick = loadProject.bind(this, details.name);
+    button.onclick = loadProject;
     label.appendChild(button)
     label.append(details.name);
     document.querySelector('#projects.content').appendChild(label);
   }
+  // TODO: remove once done debugging
   console.log("Average time to load each project:", (new Date().getTime() - startTime) / totalProjects + "ms");
   localStorage.loadTime += (new Date().getTime() - startTime) / totalProjects + " ";
 }
